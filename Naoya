@@ -13,31 +13,49 @@ local lockKey = Enum.KeyCode.ButtonL3
 local maxDistance = 500
 local isBinding = false
 local cameraMode = "Normal" 
-local rainbowEnabled = true
 local beforeImagesEnabled = false
-local afterImagesEnabled = false -- Added back
+local afterImagesEnabled = false
 local speedEnabled = false
 local speedMode = "Static" 
 local currentRampSpeed = 16
 
+-- Color System
+local colorIndex = 1
+local colorPresets = {
+    {Name = "White", Color = Color3.fromRGB(255, 255, 255)},
+    {Name = "Red", Color = Color3.fromRGB(255, 50, 50)},
+    {Name = "Blue", Color = Color3.fromRGB(50, 150, 255)},
+    {Name = "Green", Color = Color3.fromRGB(50, 255, 100)},
+    {Name = "Purple", Color = Color3.fromRGB(180, 50, 255)},
+    {Name = "Rainbow", Color = Color3.new(1,1,1)}
+}
+
+local targetHighlight = Instance.new("Highlight")
+targetHighlight.Name = "NaoyaTarget_V21"
+targetHighlight.FillTransparency = 0.5
+targetHighlight.OutlineTransparency = 0
+targetHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+
 -----------------------------------------------------------
--- UI CONSTRUCTION
+-- UI SETUP
 -----------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "NaoyaV18"
+ScreenGui.Name = "NaoyaV21"
 ScreenGui.Parent = CoreGui
 ScreenGui.ResetOnSpawn = false
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 220, 0, 130)
 MainFrame.Position = UDim2.new(0.5, -110, 0.4, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.Draggable, MainFrame.Active = true, true
 MainFrame.Parent = ScreenGui
 Instance.new("UICorner", MainFrame)
 
 local SettingsFrame = Instance.new("Frame")
-SettingsFrame.Size = UDim2.new(0, 200, 0, 280) -- Taller for After-Image button
+SettingsFrame.Size = UDim2.new(0, 200, 0, 280)
 SettingsFrame.Position = UDim2.new(1.05, 0, 0, 0)
+SettingsFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 SettingsFrame.Visible = false
 SettingsFrame.Parent = MainFrame
 Instance.new("UICorner", SettingsFrame)
@@ -49,90 +67,89 @@ Title.Parent = MainFrame
 Instance.new("UICorner", Title)
 
 local SettingsBtn = Instance.new("TextButton")
-SettingsBtn.Size, SettingsBtn.Position = UDim2.new(0, 30, 0, 30), UDim2.new(1, -35, 0, 2)
-SettingsBtn.BackgroundTransparency, SettingsBtn.Text = 1, "⚙️"
+SettingsBtn.Size, SettingsBtn.Position = UDim2.new(0, 30, 0, 2), UDim2.new(1, -35, 0, 2)
+SettingsBtn.BackgroundTransparency, SettingsBtn.Text, SettingsBtn.TextSize = 1, "⚙️", 18
 SettingsBtn.Parent = MainFrame
 
 local StatusLabel = Instance.new("TextLabel")
 StatusLabel.Size, StatusLabel.Position = UDim2.new(1, 0, 0, 30), UDim2.new(0, 0, 0, 40)
-StatusLabel.Text, StatusLabel.BackgroundTransparency = "STATUS: IDLE", 1
+StatusLabel.Text, StatusLabel.TextColor3, StatusLabel.BackgroundTransparency = "STATUS: IDLE", Color3.fromRGB(200,200,200), 1
 StatusLabel.Parent = MainFrame
 
 local BindButton = Instance.new("TextButton")
 BindButton.Size, BindButton.Position = UDim2.new(0.8, 0, 0, 30), UDim2.new(0.1, 0, 0, 85)
-BindButton.Text, BindButton.Parent = "BIND: ButtonL3", MainFrame
+BindButton.Text, BindButton.TextColor3 = "BIND: ButtonL3", Color3.fromRGB(0,0,0)
+BindButton.Parent = MainFrame
 Instance.new("UICorner", BindButton)
 
 local function createSetBtn(text, pos, parent)
     local btn = Instance.new("TextButton")
     btn.Size, btn.Position = UDim2.new(0.9, 0, 0, 30), pos
-    btn.Text, btn.TextColor3 = text, Color3.fromRGB(255, 255, 255)
+    btn.Text, btn.TextColor3 = text, Color3.fromRGB(0,0,0)
     btn.Parent = parent
     Instance.new("UICorner", btn)
     return btn
 end
 
 local CamModeBtn = createSetBtn("Camera Mode: Normal", UDim2.new(0.05, 0, 0.03, 0), SettingsFrame)
-local BeforeImageBtn = createSetBtn("Before-Images: OFF", UDim2.new(0.05, 0, 0.18, 0), SettingsFrame)
-local AfterImageBtn = createSetBtn("After-Images: OFF", UDim2.new(0.05, 0, 0.33, 0), SettingsFrame)
-local SpeedBtn = createSetBtn("Speed: OFF", UDim2.new(0.05, 0, 0.48, 0), SettingsFrame)
-local SpeedModeBtn = createSetBtn("Mode: Static", UDim2.new(0.05, 0, 0.63, 0), SettingsFrame)
-local RainbowBtn = createSetBtn("Rainbow UI: ON", UDim2.new(0.05, 0, 0.78, 0), SettingsFrame)
+local ColorSelectBtn = createSetBtn("Color: White", UDim2.new(0.05, 0, 0.18, 0), SettingsFrame)
+local BeforeImageBtn = createSetBtn("Before-Images: OFF", UDim2.new(0.05, 0, 0.33, 0), SettingsFrame)
+local AfterImageBtn = createSetBtn("After-Images: OFF", UDim2.new(0.05, 0, 0.48, 0), SettingsFrame)
+local SpeedBtn = createSetBtn("Speed: OFF", UDim2.new(0.05, 0, 0.63, 0), SettingsFrame)
+local SpeedModeBtn = createSetBtn("Mode: Static", UDim2.new(0.05, 0, 0.78, 0), SettingsFrame)
 
 local MenuToggle = Instance.new("TextButton")
 MenuToggle.Size, MenuToggle.Position = UDim2.new(0, 100, 0, 30), UDim2.new(0.5, -50, 0, 10)
-MenuToggle.Text, MenuToggle.Parent = "MENU", ScreenGui
+MenuToggle.Text, MenuToggle.TextColor3, MenuToggle.BackgroundColor3 = "MENU", Color3.fromRGB(255,255,255), Color3.fromRGB(20,20,20)
+MenuToggle.Parent = ScreenGui
 Instance.new("UICorner", MenuToggle)
 
 -----------------------------------------------------------
--- CLONE GENERATOR
+-- CORE LOGIC
 -----------------------------------------------------------
-local function spawnClone(cframe, rainbowColor)
+local function spawnClone(cframe, activeColor)
     if not player.Character then return end
     player.Character.Archivable = true
     local clone = player.Character:Clone()
     for _, obj in pairs(clone:GetDescendants()) do
         if obj:IsA("BasePart") then
             obj.CanCollide, obj.Anchored, obj.Material = false, true, Enum.Material.ForceField
-            obj.Color = rainbowColor
+            obj.Color = activeColor
         elseif not (obj:IsA("SpecialMesh") or obj:IsA("CharacterMesh")) then obj:Destroy() end
     end
     clone:SetPrimaryPartCFrame(cframe)
     clone.Parent = workspace
-    task.delay(0.35, function()
+    task.delay(0.3, function()
         for i = 1, 10 do
             for _, p in pairs(clone:GetDescendants()) do if p:IsA("BasePart") then p.Transparency = i/10 end end
-            task.wait(0.04)
+            task.wait(0.03)
         end
         clone:Destroy()
     end)
 end
 
------------------------------------------------------------
--- TOGGLES
------------------------------------------------------------
+-- UI Toggle Connections
+ColorSelectBtn.MouseButton1Click:Connect(function() colorIndex = (colorIndex % #colorPresets) + 1 ColorSelectBtn.Text = "Color: "..colorPresets[colorIndex].Name end)
 BeforeImageBtn.MouseButton1Click:Connect(function() beforeImagesEnabled = not beforeImagesEnabled BeforeImageBtn.Text = "Before-Images: "..(beforeImagesEnabled and "ON" or "OFF") end)
 AfterImageBtn.MouseButton1Click:Connect(function() afterImagesEnabled = not afterImagesEnabled AfterImageBtn.Text = "After-Images: "..(afterImagesEnabled and "ON" or "OFF") end)
 SpeedBtn.MouseButton1Click:Connect(function() speedEnabled = not speedEnabled SpeedBtn.Text = "Speed: "..(speedEnabled and "ON" or "OFF") if not speedEnabled and player.Character then player.Character.Humanoid.WalkSpeed = 16 currentRampSpeed = 16 end end)
 SpeedModeBtn.MouseButton1Click:Connect(function() speedMode = (speedMode == "Static") and "Overtime" or "Static" SpeedModeBtn.Text = "Mode: "..speedMode end)
-RainbowBtn.MouseButton1Click:Connect(function() rainbowEnabled = not rainbowEnabled RainbowBtn.Text = "Rainbow UI: "..(rainbowEnabled and "ON" or "OFF") end)
 CamModeBtn.MouseButton1Click:Connect(function() cameraMode = (cameraMode == "Normal") and "Lock-On" or "Normal" CamModeBtn.Text = "Camera Mode: "..cameraMode end)
 SettingsBtn.MouseButton1Click:Connect(function() SettingsFrame.Visible = not SettingsFrame.Visible end)
 MenuToggle.MouseButton1Click:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
 
------------------------------------------------------------
--- MAIN LOOP
------------------------------------------------------------
 local hue = 0
 RunService.RenderStepped:Connect(function()
     hue = (hue + 0.01) % 1
-    local rainbowColor = Color3.fromHSV(hue, 0.8, 0.8)
-    
-    if rainbowEnabled then
-        local dark = Color3.fromHSV(hue, 0.8, 0.3)
-        MainFrame.BackgroundColor3, SettingsFrame.BackgroundColor3, MenuToggle.BackgroundColor3 = dark, dark, dark
-        local btns = {Title, BindButton, CamModeBtn, BeforeImageBtn, AfterImageBtn, SpeedBtn, SpeedModeBtn, RainbowBtn}
-        for _, b in pairs(btns) do b.BackgroundColor3 = rainbowColor end
+    local isRainbow = (colorPresets[colorIndex].Name == "Rainbow")
+    local activeColor = isRainbow and Color3.fromHSV(hue, 0.8, 0.8) or colorPresets[colorIndex].Color
+    local dark = isRainbow and Color3.fromHSV(hue, 0.8, 0.2) or Color3.fromRGB(20, 20, 20)
+
+    MainFrame.BackgroundColor3, SettingsFrame.BackgroundColor3, MenuToggle.BackgroundColor3 = dark, dark, dark
+    local btns = {Title, BindButton, CamModeBtn, ColorSelectBtn, BeforeImageBtn, AfterImageBtn, SpeedBtn, SpeedModeBtn}
+    for _, b in pairs(btns) do 
+        b.BackgroundColor3 = activeColor 
+        b.TextColor3 = (isRainbow or colorPresets[colorIndex].Name == "White") and Color3.new(0,0,0) or Color3.new(1,1,1)
     end
 
     if not player.Character or not player.Character:FindFirstChild("Humanoid") then return end
@@ -147,45 +164,78 @@ RunService.RenderStepped:Connect(function()
         else currentRampSpeed = 16 hum.WalkSpeed = 16 end
     end
 
-    -- Dual Images
+    -- Images
     if root.Velocity.Magnitude > 5 then
-        if beforeImagesEnabled then
-            spawnClone(root.CFrame + (root.Velocity * 0.25), rainbowColor) -- Closer Before-Image
-        end
-        if afterImagesEnabled then
-            spawnClone(root.CFrame, rainbowColor) -- Standard After-Image
-        end
+        if beforeImagesEnabled then spawnClone(root.CFrame + (root.Velocity * 0.2), activeColor) end
+        if afterImagesEnabled then spawnClone(root.CFrame, activeColor) end
     end
 
-    -- Combat
+    -- Target & Face Logic
     if isLocked and targetPart and targetPart.Parent and targetPart.Parent:FindFirstChild("HumanoidRootPart") then
+        targetHighlight.Adornee = targetPart.Parent
+        targetHighlight.FillColor, targetHighlight.OutlineColor = activeColor, activeColor
+        targetHighlight.Enabled = true
+        targetHighlight.Parent = CoreGui
+        
         root.CFrame = CFrame.lookAt(root.Position, Vector3.new(targetPart.Position.X, root.Position.Y, targetPart.Position.Z))
         hum.AutoRotate = false
         if cameraMode == "Lock-On" then camera.CFrame = CFrame.lookAt(camera.CFrame.Position, targetPart.Position) end
     else
+        targetHighlight.Enabled = false
         isLocked, targetPart, hum.AutoRotate = false, nil, true
         StatusLabel.Text = "STATUS: IDLE"
     end
 end)
 
--- Standard Bind Logic
-BindButton.MouseButton1Click:Connect(function() isBinding = true BindButton.Text = "...PRESS KEY..." end)
-UserInputService.InputBegan:Connect(function(i, p)
-    if isBinding then lockKey, isBinding, BindButton.Text = i.KeyCode ~= Enum.KeyCode.Unknown and i.KeyCode or i.UserInputType, false, "BIND: " .. tostring(i.KeyCode.Name):gsub("Button","") return end
-    if p then return end
-    if i.KeyCode == lockKey or i.UserInputType == lockKey then
+-----------------------------------------------------------
+-- FIX: REWRITTEN BIND LOGIC
+-----------------------------------------------------------
+BindButton.MouseButton1Click:Connect(function()
+    isBinding = true
+    BindButton.Text = "...PRESS ANY KEY..."
+end)
+
+UserInputService.InputBegan:Connect(function(input, processed)
+    -- If setting a new bind
+    if isBinding then
+        local key = input.KeyCode
+        if key == Enum.KeyCode.Unknown then key = input.UserInputType end -- Handle mouse/trigger clicks
+        
+        lockKey = key
+        isBinding = false
+        BindButton.Text = "BIND: " .. tostring(key.Name):gsub("Button","")
+        return
+    end
+
+    if processed then return end
+
+    -- Toggle Lock
+    if input.KeyCode == lockKey or input.UserInputType == lockKey then
         isLocked = not isLocked
-        StatusLabel.Text = isLocked and "STATUS: LOCKED" or "STATUS: IDLE"
-        if isLocked then 
-            local target, dist = nil, maxDistance
+        
+        if isLocked then
+            local closestTarget = nil
+            local dist = maxDistance
+            
             for _, v in pairs(Players:GetPlayers()) do
                 if v ~= player and v.Character and v.Character:FindFirstChild("HumanoidRootPart") then
-                    local d = (root.Position - v.Character.HumanoidRootPart.Position).Magnitude
-                    if d < dist then target, dist = v.Character.HumanoidRootPart, d end
+                    local d = (player.Character.HumanoidRootPart.Position - v.Character.HumanoidRootPart.Position).Magnitude
+                    if d < dist then
+                        closestTarget = v.Character.HumanoidRootPart
+                        dist = d
+                    end
                 end
             end
-            targetPart = target
-            if not targetPart then isLocked = false end
+            
+            if closestTarget then
+                targetPart = closestTarget
+                StatusLabel.Text = "STATUS: LOCKED"
+            else
+                isLocked = false
+                StatusLabel.Text = "STATUS: NO TARGET"
+            end
+        else
+            StatusLabel.Text = "STATUS: IDLE"
         end
     end
 end)
