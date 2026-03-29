@@ -32,7 +32,7 @@ local colorPresets = {
 }
 
 local targetHighlight = Instance.new("Highlight")
-targetHighlight.Name = "NaoyaTarget_V27"
+targetHighlight.Name = "NaoyaTarget_V28"
 targetHighlight.FillTransparency = 0.5
 targetHighlight.OutlineTransparency = 0
 targetHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
@@ -41,21 +41,21 @@ targetHighlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
 -- UI SETUP
 -----------------------------------------------------------
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "NaoyaV27"
+ScreenGui.Name = "NaoyaV28"
 ScreenGui.Parent = CoreGui
 ScreenGui.ResetOnSpawn = false
 ScreenGui.DisplayOrder = 100
 
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 220, 0, 130)
-MainFrame.Position = UDim2.new(0.5, -110, 1.5, 0) -- Starts off-screen for animation
+MainFrame.Position = UDim2.new(0.5, -110, 1.5, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MainFrame.Active, MainFrame.Draggable = true, true
 MainFrame.Parent = ScreenGui
 Instance.new("UICorner", MainFrame)
 
 local SettingsFrame = Instance.new("Frame")
-SettingsFrame.Size = UDim2.new(0, 200, 0, 300) -- Increased height for new buttons
+SettingsFrame.Size = UDim2.new(0, 200, 0, 300)
 SettingsFrame.Position = UDim2.new(1.05, 0, 0, 0)
 SettingsFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 SettingsFrame.Visible, SettingsFrame.ZIndex = false, 5
@@ -92,7 +92,6 @@ local function createSetBtn(text, pos, parent)
     return btn
 end
 
--- Stacked Settings Buttons
 local CamModeBtn = createSetBtn("Camera Mode: Normal", UDim2.new(0.05, 0, 0, 10), SettingsFrame)
 local ColorSelectBtn = createSetBtn("Color: White", UDim2.new(0.05, 0, 0, 45), SettingsFrame)
 local BeforeImageBtn = createSetBtn("Before-Images: OFF", UDim2.new(0.05, 0, 0, 80), SettingsFrame)
@@ -103,7 +102,7 @@ local AntiLagBtn = createSetBtn("Anti-Lag (Click Once)", UDim2.new(0.05, 0, 0, 2
 local DestroyGuiBtn = createSetBtn("Destroy GUI (Keep Active)", UDim2.new(0.05, 0, 0, 255), SettingsFrame)
 
 local MenuToggle = Instance.new("TextButton")
-MenuToggle.Size, MenuToggle.Position = UDim2.new(0, 100, 0, 30), UDim2.new(0.5, -50, -0.2, 0) -- Starts off-screen
+MenuToggle.Size, MenuToggle.Position = UDim2.new(0, 100, 0, 30), UDim2.new(0.5, -50, -0.2, 0)
 MenuToggle.Text, MenuToggle.Parent = "MENU", ScreenGui
 Instance.new("UICorner", MenuToggle)
 
@@ -115,41 +114,31 @@ TweenService:Create(MainFrame, slideTween, {Position = UDim2.new(0.5, -110, 0.4,
 TweenService:Create(MenuToggle, slideTween, {Position = UDim2.new(0.5, -50, 0, 10)}):Play()
 
 -----------------------------------------------------------
--- TRUE GHOST CLONE LOGIC
+-- GHOST CLONE LOGIC
 -----------------------------------------------------------
 local function spawnAvatarClone(cframe, activeColor)
     local char = player.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-    
     char.Archivable = true
     local clone = char:Clone()
     char.Archivable = false
-    
     clone:SetPrimaryPartCFrame(cframe)
     clone.Parent = workspace
-    
     local cloneHum = clone:FindFirstChildOfClass("Humanoid")
     if cloneHum then cloneHum:Destroy() end
     local cloneHrp = clone:FindFirstChild("HumanoidRootPart")
     if cloneHrp then cloneHrp:Destroy() end
-
     for _, obj in pairs(clone:GetDescendants()) do
         if obj:IsA("BasePart") then
-            obj.CanCollide, obj.CanTouch, obj.CanQuery = false, false, false
-            obj.Anchored = true
-            obj.Material = Enum.Material.ForceField
-            obj.Color = activeColor
-            obj.CastShadow = false
+            obj.CanCollide, obj.CanTouch, obj.CanQuery, obj.Anchored = false, false, false, true
+            obj.Material, obj.Color, obj.CastShadow = Enum.Material.ForceField, activeColor, false
         elseif obj:IsA("LocalScript") or obj:IsA("Script") or obj:IsA("Sound") or obj:IsA("Decal") then
             obj:Destroy()
         end
     end
-    
     task.spawn(function()
         for i = 1, 15 do
-            for _, p in pairs(clone:GetDescendants()) do
-                if p:IsA("BasePart") then p.Transparency = (i/15) + 0.2 end
-            end
+            for _, p in pairs(clone:GetDescendants()) do if p:IsA("BasePart") then p.Transparency = (i/15) + 0.2 end end
             task.wait(0.03)
         end
         clone:Destroy()
@@ -157,7 +146,7 @@ local function spawnAvatarClone(cframe, activeColor)
 end
 
 -----------------------------------------------------------
--- TOGGLES, UTILITIES & BINDS
+-- ACTIVATIONS & BINDS
 -----------------------------------------------------------
 SettingsBtn.Activated:Connect(function() SettingsFrame.Visible = not SettingsFrame.Visible end)
 ColorSelectBtn.Activated:Connect(function() colorIndex = (colorIndex % #colorPresets) + 1 ColorSelectBtn.Text = "Color: "..colorPresets[colorIndex].Name end)
@@ -167,24 +156,8 @@ SpeedBtn.Activated:Connect(function() speedEnabled = not speedEnabled SpeedBtn.T
 SpeedModeBtn.Activated:Connect(function() speedMode = (speedMode == "Static") and "Overtime" or "Static" SpeedModeBtn.Text = "Mode: "..speedMode end)
 CamModeBtn.Activated:Connect(function() cameraMode = (cameraMode == "Normal") and "Lock-On" or "Normal" CamModeBtn.Text = "Camera Mode: "..cameraMode end)
 MenuToggle.Activated:Connect(function() MainFrame.Visible = not MainFrame.Visible end)
-
-AntiLagBtn.Activated:Connect(function()
-    AntiLagBtn.Text = "Anti-Lag: ACTIVATED"
-    game.Lighting.GlobalShadows = false
-    for _, v in pairs(workspace:GetDescendants()) do
-        if v:IsA("BasePart") then
-            v.Material = Enum.Material.SmoothPlastic
-            v.CastShadow = false
-        elseif v:IsA("Texture") or v:IsA("Decal") then
-            if v.Name ~= "face" then v:Destroy() end -- Keeps avatars' faces intact
-        end
-    end
-end)
-
-DestroyGuiBtn.Activated:Connect(function()
-    ScreenGui:Destroy() -- Removes the GUI completely, but the loop keeps running!
-end)
-
+AntiLagBtn.Activated:Connect(function() AntiLagBtn.Text = "Anti-Lag: ACTIVE" game.Lighting.GlobalShadows = false for _, v in pairs(workspace:GetDescendants()) do if v:IsA("BasePart") then v.Material, v.CastShadow = Enum.Material.SmoothPlastic, false elseif v:IsA("Texture") or v:IsA("Decal") then if v.Name ~= "face" then v:Destroy() end end end end)
+DestroyGuiBtn.Activated:Connect(function() ScreenGui:Destroy() end)
 BindButton.Activated:Connect(function() isBinding = true BindButton.Text = "...PRESS KEY..." end)
 
 UserInputService.InputBegan:Connect(function(input, processed)
@@ -208,14 +181,12 @@ UserInputService.InputBegan:Connect(function(input, processed)
             targetPart = closestTarget
             if ScreenGui.Parent then StatusLabel.Text = targetPart and "STATUS: LOCKED" or "STATUS: NO TARGET" end
             if not targetPart then isLocked = false end
-        else
-            if ScreenGui.Parent then StatusLabel.Text = "STATUS: IDLE" end
-        end
+        else if ScreenGui.Parent then StatusLabel.Text = "STATUS: IDLE" end end
     end
 end)
 
 -----------------------------------------------------------
--- RUNTIME
+-- RUNTIME (SHIFTLOCK OVERRIDE)
 -----------------------------------------------------------
 local hue = 0
 RunService.RenderStepped:Connect(function()
@@ -224,14 +195,10 @@ RunService.RenderStepped:Connect(function()
     local activeColor = isRainbow and Color3.fromHSV(hue, 0.8, 0.8) or colorPresets[colorIndex].Color
     local dark = isRainbow and Color3.fromHSV(hue, 0.8, 0.2) or Color3.fromRGB(20, 20, 20)
 
-    -- Only color cycle the UI if it hasn't been destroyed
     if ScreenGui.Parent then
         MainFrame.BackgroundColor3, SettingsFrame.BackgroundColor3, MenuToggle.BackgroundColor3 = dark, dark, dark
         local btns = {Title, BindButton, CamModeBtn, ColorSelectBtn, BeforeImageBtn, AfterImageBtn, SpeedBtn, SpeedModeBtn, AntiLagBtn, DestroyGuiBtn}
-        for _, b in pairs(btns) do 
-            b.BackgroundColor3 = activeColor 
-            b.TextColor3 = (isRainbow or colorPresets[colorIndex].Name == "White") and Color3.new(0,0,0) or Color3.new(1,1,1)
-        end
+        for _, b in pairs(btns) do b.BackgroundColor3, b.TextColor3 = activeColor, (isRainbow or colorPresets[colorIndex].Name == "White") and Color3.new(0,0,0) or Color3.new(1,1,1) end
     end
 
     if not player.Character or not player.Character:FindFirstChild("Humanoid") then return end
@@ -240,28 +207,33 @@ RunService.RenderStepped:Connect(function()
     -- Speed
     if speedEnabled then
         if speedMode == "Static" then hum.WalkSpeed = 100
-        elseif speedMode == "Overtime" and hum.MoveDirection.Magnitude > 0 then
-            currentRampSpeed = math.min((currentRampSpeed or 16) + 0.4, 150)
-            hum.WalkSpeed = currentRampSpeed
-        else currentRampSpeed = 16 hum.WalkSpeed = 90 end
+        elseif speedMode == "Overtime" and hum.MoveDirection.Magnitude > 0 then currentRampSpeed = math.min((currentRampSpeed or 16) + 0.4, 150) hum.WalkSpeed = currentRampSpeed
+        else currentRampSpeed = 16 hum.WalkSpeed = 16 end
     end
 
-    -- Spawning Logic
+    -- Clone Spawning
     if root.Velocity.Magnitude > 5 then
         if beforeImagesEnabled then spawnAvatarClone(root.CFrame * CFrame.new(0,0,-4), activeColor) end
         if afterImagesEnabled then spawnAvatarClone(root.CFrame * CFrame.new(0,0,1), activeColor) end
     end
 
-    -- Combat Lock
+    -- Combat Lock (SHIFTLOCK OVERRIDE FIX)
     if isLocked and targetPart and targetPart.Parent and targetPart.Parent:FindFirstChild("Humanoid") then
         targetHighlight.Adornee = targetPart.Parent
         targetHighlight.FillColor, targetHighlight.OutlineColor = activeColor, activeColor
         targetHighlight.Enabled, targetHighlight.Parent = true, CoreGui
-        root.CFrame = CFrame.lookAt(root.Position, Vector3.new(targetPart.Position.X, root.Position.Y, targetPart.Position.Z))
+        
+        -- Override AutoRotate to stop Shiftlock from snapping back
         hum.AutoRotate = false
+        
+        -- Force CFrame rotation towards target (ignores Camera)
+        local targetPos = Vector3.new(targetPart.Position.X, root.Position.Y, targetPart.Position.Z)
+        root.CFrame = CFrame.lookAt(root.Position, targetPos)
+        
         if cameraMode == "Lock-On" then camera.CFrame = CFrame.lookAt(camera.CFrame.Position, targetPart.Position) end
     else
         targetHighlight.Enabled = false
         isLocked, hum.AutoRotate = false, true
     end
 end)
+
